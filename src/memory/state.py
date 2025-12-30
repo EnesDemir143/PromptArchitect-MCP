@@ -1,35 +1,63 @@
 import operator
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
 
 from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
 from typing_extensions import Annotated
 
 
-class ProjectManifest(TypedDict):
-    project_name: str
+class ProjectMeta(TypedDict):
+    name: str
     tech_stack: List[str]
-    tasks: List[Dict[str, Any]]
-    current_milestone: str
+    architecture: str
+    root_directory: Optional[str]
+
+
+class ProjectStatus(TypedDict):
+    current_phase: str
+    active_goal: str
+    last_update: Optional[str]
+
+
+class Task(TypedDict):
+    id: str
+    title: str
+    status: str  # "todo", "in_progress", "completed"
+    description: Optional[str]
+    outcome: Optional[str]
+    dependencies: Optional[List[str]]
+
+
+# --- ANA MANIFEST ---
+
+
+class ProjectManifest(TypedDict):
+    project_meta: ProjectMeta
+    status: ProjectStatus
+    tasks: List[Task]
+    global_rules: List[str]
+
+
+# --- LANGGRAPH STATE ---
 
 
 class AgentState(TypedDict):
-    # Ana iletişim ve araçlar
-    messages: List[BaseMessage]
+    messages: Annotated[List[BaseMessage], add_messages]
     tools_dict: Dict
 
-    # [HAFIZA] JSON'dan gelen kalıcı veriler
+    # Kalıcı hafıza artık çok daha detaylı
     manifest: ProjectManifest
 
-    # [RAG] Vector DB'den çekilen ilgili kod parçaları veya dökümanlar
+    # RAG'den gelen bağlam
     relevant_context: Optional[str]
 
-    # [OUTPUT] Refiner agent tarafından üretilen nihai çıktı
+    # Nihai üretilen prompt
     final_prompt: Optional[str]
 
-    # [LOGGING] LangGraph akışını takip etmek için adım adım geçmiş
+    # İşlem geçmişi (Loglar)
     history: Annotated[List[str], operator.add]
 
-    # Akış kontrolü
+    # Akış yönetimi
     current_agent: str
     next_node: str
 
