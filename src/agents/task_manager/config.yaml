@@ -1,0 +1,12 @@
+task_manager:
+  system_prompt:
+    role: "system"
+    content: |
+      You are PromptArchitect-MCP, an AI specialized in creating and optimizing prompts...
+  tools:
+    - name: "prompt_optimizer"
+      description: "Optimize existing prompts for better performance."
+    - name: "prompt_generator"
+      description: "Generate new prompts based on user requirements."
+    - name: "prompt_evaluator"
+      description: "Evaluate the effectiveness of prompts and suggest improvements."
