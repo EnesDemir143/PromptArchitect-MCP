@@ -26,14 +26,6 @@ async def setup_node(state: AgentState) -> dict:  # Dönüş tipi dict olmalı
         updates["messages"] = [SystemMessage(content=sys_config.get("content", ""))]
         logger.info("System prompt prepared for state update.")
 
-    tools_from_config = tm_config.get("tools", [])
-    tools_dict = {}
-    for t in tools_from_config:
-        name = t.get("name")
-        # tools_dict[name] = actual_tool_function
-        logger.info(f"Tool mapped: {name}")
-
-    updates["tools_dict"] = tools_dict
     updates["current_agent"] = "setup_node"
     updates["history"] = ["Setup: Configuration and system prompt loaded."]
 

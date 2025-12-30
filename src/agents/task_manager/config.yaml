@@ -5,8 +5,14 @@ task_manager:
       You are PromptArchitect-MCP, an AI specialized in creating and optimizing prompts...
   tools:
     - name: "prompt_optimizer"
+      class_name: "PromptOptimizer"
+      import_path: "agents/task_manager/tools/optimizer.py"
       description: "Optimize existing prompts for better performance."
     - name: "prompt_generator"
+      class_name: "PromptGenerator"
+      import_path: "agents/task_manager/tools/generator.py"
       description: "Generate new prompts based on user requirements."
     - name: "prompt_evaluator"
+      class_name: "PromptEvaluator"
+      import_path: "agents/task_manager/tools/evaluator.py"
       description: "Evaluate the effectiveness of prompts and suggest improvements."
