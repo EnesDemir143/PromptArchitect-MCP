@@ -7,54 +7,34 @@ from core.state import AgentState
 from logger import logger
 
 
-async def setup_node(state: AgentState) -> AgentState:
-    """Sets up the node by loading configuration from a YAML file."""
+async def setup_node(state: AgentState) -> dict:  # Dönüş tipi dict olmalı
+    """Sets up the node by returning only the necessary state updates."""
 
-    config_path = Path("../config.yaml")
+    config_path = Path(__file__).parent.parent / "config.yaml"
     if not config_path.exists():
-        raise FileNotFoundError(f"Configuration file {config_path} not found.")
+        logger.error(f"Configuration file not found at {config_path}")
+        return {"error": "Config file missing"}
 
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
 
-    if state is None:
-        state = AgentState(
-            messages=[],
-            tools_dict={},
-            manifest={
-                "project_meta": {
-                    "name": "",
-                    "tech_stack": [],
-                    "architecture": "",
-                    "root_directory": None,
-                },
-                "status": {
-                    "current_phase": "",
-                    "active_goal": "",
-                    "last_update": None,
-                },
-                "tasks": [],
-                "global_rules": [],
-            },
-            relevant_context=None,
-            final_prompt=None,
-            history=[],
-            current_agent="",
-            next_node="",
-        )
-
+    updates = {}
     tm_config = config.get("task_manager", {})
 
     sys_config = tm_config.get("system_prompt", {})
     if sys_config.get("role") == "system":
-        state["messages"].append(SystemMessage(content=sys_config.get("content", "")))
-        logger.info("System prompt added to messages.")
+        updates["messages"] = [SystemMessage(content=sys_config.get("content", ""))]
+        logger.info("System prompt prepared for state update.")
 
-    tools_list = tm_config.get("tools", [])
-    for tool in tools_list:
-        name = tool.get("name")
-        desc = tool.get("description")
-        state["tools_dict"][name] = desc
-        logger.info(f"Tool added: {name}")
+    tools_from_config = tm_config.get("tools", [])
+    tools_dict = {}
+    for t in tools_from_config:
+        name = t.get("name")
+        # tools_dict[name] = actual_tool_function
+        logger.info(f"Tool mapped: {name}")
 
-    return state
+    updates["tools_dict"] = tools_dict
+    updates["current_agent"] = "setup_node"
+    updates["history"] = ["Setup: Configuration and system prompt loaded."]
+
+    return updates
