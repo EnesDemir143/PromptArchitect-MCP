@@ -61,11 +61,21 @@ async def create_main_agent():
         except Exception as e:
             logger.error(f"Error loading {t.get('class_name')}: {str(e)}")
 
+    tools_dict = {t.name: t for t in actual_tool_instances}
+
+    async def setup_node_with_tools(state: AgentState):
+        """
+        Wrapper around setup_node to inject tools into the state.
+        """
+        result = await setup_node(state)  # Orijinal setup_node'u çalıştır
+        result["tools_dict"] = tools_dict  # Tool'ları state'e ekle
+        return result
+
     # 3. Graf Yapılandırması
     workflow = StateGraph(AgentState)
 
     # Düğümleri Ekle
-    workflow.add_node("setup", setup_node)
+    workflow.add_node("setup", setup_node_with_tools)
     workflow.add_node("analysis", analysis_agent)
     # Hazır ToolNode, listeyi otomatik olarak fonksiyon isimleriyle eşleştirir
     workflow.add_node("tools", ToolNode(tools=actual_tool_instances))

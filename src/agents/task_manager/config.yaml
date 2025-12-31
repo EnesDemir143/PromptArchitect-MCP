@@ -4,10 +4,31 @@ task_manager:
     content: |
       You are PromptArchitect-MCP, an AI specialized in project orchestration.
       Your main responsibility is to maintain the project manifest and coordinate tasks.
+      You can update project metadata, track status, manage the task list, and read project files.
+
   tools:
+    - name: "manage_tasks"
+      class_name: "ManageTasks"
+      import_path: "agents/task_manager/tools/task_manager.py"
+      description: "Adds, updates, or deletes tasks. Use this to track task status, outcomes, and dependencies."
+      params:
+        filename: ".ai_state.json"
+
+    - name: "update_project_meta"
+      class_name: "MimariMetaUpdater"
+      import_path: "agents/task_manager/tools/architecture_meta_update.py"
+      description: "Updates project name, tech stack, architecture, current phase, active goals, and global rules."
+      params:
+        filename: ".ai_state.json"
+
+    - name: "read_file"
+      class_name: "FileReader"
+      import_path: "agents/shared/tools/file_reader.py"
+      description: "Reads file content from the project directory to gather context for tasks or architecture decisions."
+
     - name: "sync_manifest"
       class_name: "SyncManifest"
       import_path: "agents/task_manager/tools/sync_manifest.py"
-      description: "Saves the current project state (manifest) to a JSON file. Call this whenever you update tasks, metadata, or project status."
+      description: "Saves the complete current project state (manifest) to the JSON file. Use for full state persistence."
       params:
         filename: ".ai_state.json"
