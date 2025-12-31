@@ -18,6 +18,13 @@ class TaskInput(BaseModel):
     description: Optional[str] = Field(
         None, description="Detailed explanation of the task"
     )
+    # --- EKLENEN ALANLAR ---
+    outcome: Optional[str] = Field(
+        None, description="The result or final output of the task"
+    )
+    dependencies: Optional[List[str]] = Field(
+        None, description="List of task IDs that must be completed before this one"
+    )
 
 
 class ManageTasks(BaseTool):
@@ -35,6 +42,8 @@ class ManageTasks(BaseTool):
         title: Optional[str] = None,
         status: str = "todo",
         description: Optional[str] = None,
+        outcome: Optional[str] = None,  # Eklendi
+        dependencies: Optional[List[str]] = None,  # Eklendi
     ) -> str:
         msg: str = "No action performed."
 
@@ -53,6 +62,8 @@ class ManageTasks(BaseTool):
                     "title": title or "Untitled Task",
                     "status": status,
                     "description": description or "",
+                    "outcome": outcome or "",  # Eklendi
+                    "dependencies": dependencies or [],  # Eklendi
                 }
                 tasks.append(new_task)
                 msg = f"Task '{task_id}' added successfully."
@@ -67,6 +78,10 @@ class ManageTasks(BaseTool):
                             t["status"] = status
                         if description is not None:
                             t["description"] = description
+                        if outcome is not None:  # Eklendi
+                            t["outcome"] = outcome
+                        if dependencies is not None:  # Eklendi
+                            t["dependencies"] = dependencies
                         found = True
                         break
                 msg = (
