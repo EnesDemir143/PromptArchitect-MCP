@@ -2,17 +2,12 @@ task_manager:
   system_prompt:
     role: "system"
     content: |
-      You are PromptArchitect-MCP, an AI specialized in creating and optimizing prompts...
+      You are PromptArchitect-MCP, an AI specialized in project orchestration.
+      Your main responsibility is to maintain the project manifest and coordinate tasks.
   tools:
-    - name: "prompt_optimizer"
-      class_name: "PromptOptimizer"
-      import_path: "agents/task_manager/tools/optimizer.py"
-      description: "Optimize existing prompts for better performance."
-    - name: "prompt_generator"
-      class_name: "PromptGenerator"
-      import_path: "agents/task_manager/tools/generator.py"
-      description: "Generate new prompts based on user requirements."
-    - name: "prompt_evaluator"
-      class_name: "PromptEvaluator"
-      import_path: "agents/task_manager/tools/evaluator.py"
-      description: "Evaluate the effectiveness of prompts and suggest improvements."
+    - name: "sync_manifest"
+      class_name: "SyncManifest"
+      import_path: "agents/task_manager/tools/sync_manifest.py"
+      description: "Saves the current project state (manifest) to a JSON file. Call this whenever you update tasks, metadata, or project status."
+      params:
+        filename: ".ai_state.json"
