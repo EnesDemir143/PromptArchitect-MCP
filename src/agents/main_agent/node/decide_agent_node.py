@@ -24,6 +24,11 @@ async def decide_agent_node(state: AgentState) -> dict:
     llm = get_base_llm()
     tools = load_tools_from_config("main_agent")
 
+    for t in tools:
+        if t.name == "route_to_task_manager":
+            t.current_state = state.copy()
+            logger.info("Decide Node: Injected state into RouteToTaskManager.")
+
     if tools:
         llm_with_tools = llm.bind_tools(tools)
         logger.info(f"Decide Agent Node: Binding {len(tools)} tools to the LLM.")
@@ -49,7 +54,6 @@ async def decide_agent_node(state: AgentState) -> dict:
             temp_state["messages"] = list(state["messages"]) + [response]
 
             tool_results = await tool_node.ainvoke(temp_state)
-
             updates["messages"] += tool_results["messages"]
 
             if os.path.exists(".ai_state.json"):
