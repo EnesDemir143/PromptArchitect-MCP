@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -26,7 +26,7 @@ class MimariMetaUpdater(BaseTool):
     description: str = (
         "Updates project metadata, status, and global rules in the manifest file."
     )
-    args_schema = ManifestUpdateInput
+    args_schema: Type[BaseModel] = ManifestUpdateInput
     filename: str = ".ai_state.json"
 
     def _run(

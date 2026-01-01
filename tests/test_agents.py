@@ -8,10 +8,10 @@ from langchain_core.tools import BaseTool
 
 # Proje modüllerini import ediyoruz
 # Not: Bu test dosyasını çalıştırırken PYTHONPATH ayarı gerekebilir (aşağıda açıkladım)
-from src.agents.main_agent.agent_flow import create_main_agent
-from src.agents.main_agent.tools.task_manager_agent import RouteToTaskManager
-from src.agents.task_manager.tools.task_manager import ManageTasks
-from src.memory.json_store import JSONStore
+from agents.main_agent.agent_flow import create_main_agent
+from agents.main_agent.tools.route_task_manager import RouteToTaskManager
+from agents.task_manager.tools.task_manager import ManageTasks
+from memory.json_store import JSONStore
 
 # --- FIXTURES (Test Ortamı Hazırlığı) ---
 
@@ -91,8 +91,6 @@ def test_manage_tasks_tool(clean_manifest):
     print("✅ Görev başarıyla dosyaya yazıldı.")
 
 
-# 3. TEST: Tam Entegrasyon (Main Agent -> Router -> Sub Agent -> File)
-# Bu en kritik testtir. LLM'in gerçekten karar verip işi yaptırdığını kanıtlar.
 @pytest.mark.asyncio
 async def test_full_agent_workflow(clean_manifest):
     print("\n[Test] Main Agent Entegrasyon Testi Başlıyor...")
@@ -101,7 +99,6 @@ async def test_full_agent_workflow(clean_manifest):
     app = await create_main_agent()
 
     # 2. State Hazırla
-    # Kullanıcı net bir komut veriyor: "Task ekle"
     initial_state = {
         "messages": [
             HumanMessage(
@@ -114,26 +111,24 @@ async def test_full_agent_workflow(clean_manifest):
         "current_agent": "start",
     }
 
-    # 3. Akışı Çalıştır (En fazla 10 adım - sonsuz döngü koruması)
-    step_count = 0
-    final_state = None
+    # --- DÜZELTME BURADA: Thread ID için Config Hazırla ---
+    config = {"configurable": {"thread_id": "test_thread_1"}}
 
-    async for event in app.astream(initial_state):
+    # 3. Akışı Çalıştır (Config parametresi eklendi)
+    step_count = 0
+
+    # app.astream içine config=config ekledik
+    async for event in app.astream(initial_state, config=config):
         step_count += 1
-        # Her adımda ne olduğunu görelim
         for node_name, state_update in event.items():
             print(f"--- Node Bitti: {node_name} ---")
             if "manifest" in state_update:
                 print("⚡ Manifest güncellendi sinyali alındı!")
 
-            # Son state'i sakla
-            if node_name == "final_response":
-                pass
-
         if step_count > 15:
             break
 
-    # 4. Sonuçları Doğrula (Dosyaya bakıyoruz)
+    # 4. Sonuçları Doğrula
     with open(".ai_state.json", "r", encoding="utf-8") as f:
         final_manifest = json.load(f)
 

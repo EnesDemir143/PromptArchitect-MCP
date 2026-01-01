@@ -1,4 +1,5 @@
 import os
+from typing import Type
 
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -15,7 +16,7 @@ class FileReader(BaseTool):
     description: str = (
         "Reads file content from the project directory to gather context."
     )
-    args_schema = FileInput
+    args_schema: Type[BaseModel] = FileInput
 
     base_dir: str = os.getcwd()
 

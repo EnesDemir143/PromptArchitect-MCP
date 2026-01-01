@@ -85,7 +85,7 @@ async def setup_node(state: AgentState) -> dict:
             logger.error(f"Error loading manifest: {e}")
 
     updates["current_agent"] = "main_agent"
-    updates["next_node"] = "decide_agent_node"
+    updates["next_node"] = "decide_agent"
     updates["history"] = ["Main Agent setup completed."]
 
     return updates

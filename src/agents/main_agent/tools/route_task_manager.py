@@ -25,7 +25,7 @@ class RouteToTaskManager(BaseTool):
         "Delegates control to the Task Manager Agent. "
         "Use this to add, update, delete tasks or modify the project manifest."
     )
-    args_schema = RouteTaskInput
+    args_schema: Type[BaseModel] = RouteTaskInput
 
     def _run(self, request: str) -> str:
         """Senkron çalıştırma (LangGraph async kullandığı için burası çalışmaz)."""

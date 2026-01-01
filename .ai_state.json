@@ -1,0 +1,17 @@
+{
+    "project_meta": {
+        "name": "New AI Project",
+        "tech_stack": [],
+        "architecture": "Agentic Orchestrator",
+        "root_directory": "/home/jieuna1/Documents/PromptArchitect-MCP"
+    },
+    "status": {
+        "current_phase": "Initialization",
+        "active_goal": "Initial setup",
+        "last_update": null
+    },
+    "tasks": [],
+    "global_rules": [
+        "Follow project best practices."
+    ]
+}

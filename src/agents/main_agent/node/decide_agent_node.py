@@ -44,7 +44,11 @@ async def decide_agent_node(state: AgentState) -> dict:
             )
 
             tool_node = ToolNode(tools=tools)
-            tool_results = await tool_node.ainvoke(state)
+
+            temp_state = state.copy()
+            temp_state["messages"] = list(state["messages"]) + [response]
+
+            tool_results = await tool_node.ainvoke(temp_state)
 
             updates["messages"] += tool_results["messages"]
 
