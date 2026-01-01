@@ -40,7 +40,6 @@ class ProjectManifest(TypedDict):
 
 class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
-    tools_dict: Dict
 
     # Kalıcı hafıza artık çok daha detaylı
     manifest: ProjectManifest

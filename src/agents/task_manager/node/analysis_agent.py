@@ -1,6 +1,7 @@
 import os
 from typing import Any, Dict
 
+from agents.main_agent.node.setup_node import load_tools_from_config
 from core.llm_factory import get_base_llm
 from core.state import AgentState
 from logger import logger
@@ -23,9 +24,7 @@ async def analysis_agent(state: AgentState) -> Dict[str, Any]:
     """
     logger.info("Analysis Agent: Starting state analysis...")
 
-    all_tools_map = state.get("tools_dict", {})
-    task_tools_map = all_tools_map.get("task_manager", {})
-    tools = list(task_tools_map.values())
+    tools = load_tools_from_config("task_manager")
 
     # temperature=0 is essential for consistent tool parameter generation
     llm = get_base_llm()

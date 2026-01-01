@@ -3,6 +3,7 @@ import os
 
 from langgraph.prebuilt import ToolNode
 
+from agents.main_agent.node.setup_node import load_tools_from_config
 from core.llm_factory import get_base_llm
 from core.state import AgentState
 from logger import logger
@@ -21,8 +22,7 @@ async def decide_agent_node(state: AgentState) -> dict:
     """
 
     llm = get_base_llm()
-    main_tools = state.get("tools_dict", {}).get("main_agent", {}).values()
-    tools = list(main_tools) if main_tools else []
+    tools = load_tools_from_config("main_agent")
 
     if tools:
         llm_with_tools = llm.bind_tools(tools)

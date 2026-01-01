@@ -9,80 +9,70 @@ from core.state import AgentState
 from logger import logger
 
 
-async def assign_agent_tools_to_agent_state(state: AgentState, config) -> dict:
-    """Assigns the provided tools to the agent state."""
+def load_tools_from_config(agent_name: str) -> list:
+    """Config dosyasından belirtilen agent için tool'ları yükler."""
+    config_path = Path(__file__).parent.parent.parent / "config.yaml"
+    if not config_path.exists():
+        return []
 
-    actual_tools = {}
+    with open(config_path, "r", encoding="utf-8") as file:
+        config = yaml.safe_load(file) or {}
 
-    for agent_key, agent_info in config.items():
-        tools_metadata = agent_info.get("tools", [])
-        actual_tool_instances = []
+    agent_info = config.get(agent_name, {})
+    tools_metadata = agent_info.get("tools", [])
 
-        for t in tools_metadata:
-            try:
-                module_str = t["import_path"].replace(".py", "").replace("/", ".")
+    tool_instances = []
 
-                # Eğer bu dosya src/ altında ise:
-                module_path = (
-                    f"agents.{module_str}"
-                    if not module_str.startswith("agents")
-                    else module_str
-                )
+    for t in tools_metadata:
+        try:
+            module_str = t["import_path"].replace(".py", "").replace("/", ".")
+            module_path = (
+                f"agents.{module_str}"
+                if not module_str.startswith("agents")
+                else module_str
+            )
 
-                # Dinamik import
-                module = importlib.import_module(module_path)
-                tool_class = getattr(module, t["class_name"])
+            module = importlib.import_module(module_path)
+            tool_class = getattr(module, t["class_name"])
 
-                # Instance oluşturma
-                tool_instance = tool_class(**t.get("params", {}))
-                actual_tool_instances.append(tool_instance)
+            # Instance oluştur
+            tool_instance = tool_class(**t.get("params", {}))
+            tool_instances.append(tool_instance)
+        except Exception as e:
+            logger.error(f"Error loading tool {t.get('class_name')}: {e}")
 
-                logger.info(
-                    f"Successfully loaded: {t['class_name']} from {module_path} for agent {agent_key}"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Error loading {t.get('class_name')}: {str(e)} for agent {agent_key}"
-                )
-
-        tools_dict = {t.name: t for t in actual_tool_instances}
-        actual_tools[agent_key] = tools_dict
-
-    return actual_tools
+    return tool_instances
 
 
 async def setup_node(state: AgentState) -> dict:
-    """Sets up the node by returning only the necessary state updates."""
-
+    """Sadece system prompt ve manifest yükler."""
     config_path = Path(__file__).parent.parent.parent / "config.yaml"
     manifest_path = Path(".ai_state.json")
-
     updates: dict = {}
 
-    # 1. Config ve system prompt
+    # 1. System Prompt Yükle
     if config_path.exists():
         with open(config_path, "r", encoding="utf-8") as file:
             config = yaml.safe_load(file) or {}
 
         main_agent = config.get("main_agent", {}) or {}
         sys_cfg = main_agent.get("system_prompt", {}) or {}
-
         content = sys_cfg.get("content")
+
         if isinstance(content, str) and content.strip():
             updates["messages"] = [SystemMessage(content=content)]
-            logger.info("System prompt loaded and added to messages for Main Agent.")
+            logger.info("System prompt loaded.")
 
-        # 2. Tüm agent'ların tool instance'larını üret
-        tools_dict_per_agent = await assign_agent_tools_to_agent_state(state, config)
-        updates["tools_dict"] = tools_dict_per_agent
-
+    # 2. Manifest Yükle
     if manifest_path.exists():
         try:
             with open(manifest_path, "r", encoding="utf-8") as f:
                 updates["manifest"] = json.load(f)
-            logger.info("Manifest loaded from .ai_state.json")
+            logger.info("Manifest loaded.")
         except Exception as e:
             logger.error(f"Error loading manifest: {e}")
+
+    # Not: tools_dict ARTIK YÜKLENMİYOR.
 
     updates["current_agent"] = "main_agent"
     updates["next_node"] = "decide_agent"
