@@ -1,7 +1,6 @@
-from typing import Annotated, Any, List, Type
+from typing import Annotated, Any, Dict, List, Optional, Type
 
 from langchain.tools import BaseTool
-from langgraph.prebuilt import InjectedState
 from pydantic import BaseModel, Field
 
 from agents.task_manager.agent_flow import create_task_manager_agent
@@ -9,6 +8,7 @@ from agents.task_manager.agent_flow import create_task_manager_agent
 # Senin projendeki importlar
 from core.state import AgentState
 from logger import logger
+from src.agents.main_agent.node.setup_node import load_tools_from_config
 
 
 # 1. LLM'in göreceği parametre şeması (Sadece request'i görür)
@@ -25,7 +25,9 @@ class RouteToTaskManager(BaseTool):
         "Delegates control to the Task Manager Agent. "
         "Use this to add, update, delete tasks or modify the project manifest."
     )
-    args_schema = RouteTaskInput
+    args_schema: Type[BaseModel] = RouteTaskInput
+
+    current_state: Optional[Dict] = None
 
     def _run(self, request: str) -> str:
         """Senkron çalıştırma (LangGraph async kullandığı için burası çalışmaz)."""
@@ -35,8 +37,6 @@ class RouteToTaskManager(BaseTool):
     async def _arun(
         self,
         request: str,
-        # DİKKAT: LangGraph bu 'Annotated' kısmını görür ve State'i buraya gizlice enjekte eder.
-        state: Annotated[AgentState, InjectedState],
     ) -> dict:
         """
         Main Agent bu tool'u çağırdığında:
@@ -49,24 +49,16 @@ class RouteToTaskManager(BaseTool):
                 f"RouteToTaskManager: Routing request '{request}' to sub-agent."
             )
 
-            # --- SENİN FONKSİYONUNDAKİ MANTIK ---
-
-            # 1. Tool'ları state'den çek
-            # (Hata almamak için güvenli .get kullanımı)
-            all_tools = state.get("tools_dict", {})
-            task_tools_map = all_tools.get("task_manager", {})
-
-            if not task_tools_map:
-                return {"error": "Task Manager tools not found in state!"}
-
-            my_tools = list(task_tools_map.values())
+            task_tools = load_tools_from_config("task_manager")
+            if not task_tools:
+                return {"error": "Task Manager tools could not be loaded."}
 
             # 2. Sub-Agent'ı oluştur (State'i değil, tool listesini veriyoruz)
-            task_agent = await create_task_manager_agent(my_tools)
+            task_agent = await create_task_manager_agent(task_tools)
 
             # 3. Sub-Agent'ı çalıştır (State burada güncellenir ve result döner)
             # Not: Sub-agent dosyaya yazar, result ise o anki çıktıyı taşır.
-            result = await task_agent.ainvoke(state)
+            result = await task_agent.ainvoke(self.current_state)
 
             # 4. Sonucu işle
             # Sub-agent'ın son mesajını alıyoruz

@@ -1,0 +1,5 @@
+langchain-openai
+langchain-google-genai
+langchain-anthropic
+python-dotenv
+mcp

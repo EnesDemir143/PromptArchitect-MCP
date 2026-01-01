@@ -1,6 +1,6 @@
 import json
 from datetime import datetime  # Eklendi
-from typing import Any, Dict
+from typing import Any, Dict, Type
 
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ class SyncManifestInput(BaseModel):
 class SyncManifest(BaseTool):
     name: str = "sync_manifest"
     description: str = "Saves the current project state to a JSON file. Use this for full state persistence."
-    args_schema = SyncManifestInput
+    args_schema: Type[BaseModel] = SyncManifestInput
     filename: str = ".ai_state.json"
 
     def _run(self, manifest_data: Dict[str, Any]) -> str:

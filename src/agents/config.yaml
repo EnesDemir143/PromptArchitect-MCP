@@ -135,7 +135,7 @@ task_manager:
 
     - name: "read_file"
       class_name: "FileReader"
-      import_path: "agents/shared/tools/file_reader.py"
+      import_path: "agents/task_manager/tools/file_reader.py"
       description: "Reads file content from the project directory to gather context for tasks or architecture decisions."
 
     - name: "sync_manifest"

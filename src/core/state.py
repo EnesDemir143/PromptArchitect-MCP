@@ -9,6 +9,7 @@ from typing_extensions import Annotated
 class ProjectMeta(TypedDict):
     name: str
     tech_stack: List[str]
+    languages: Dict[str, str]
     architecture: str
     root_directory: Optional[str]
 
@@ -40,7 +41,6 @@ class ProjectManifest(TypedDict):
 
 class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
-    tools_dict: Dict
 
     # Kalıcı hafıza artık çok daha detaylı
     manifest: ProjectManifest
@@ -57,6 +57,10 @@ class AgentState(TypedDict):
     # Akış yönetimi
     current_agent: str
     next_node: str
+
+    # Sistem ve Proje Bağlamı (Otomatik)
+    system_info: dict  # OS, Shell, etc.
+    file_structure: str  # Tree view
 
     # Hata yönetimi
     error: Optional[str]

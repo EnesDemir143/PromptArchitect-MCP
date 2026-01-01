@@ -39,7 +39,6 @@ async def create_main_agent():
     )
 
     # ReAct loop: tools → tekrar decide_agent
-    workflow.add_edge("tools", "decide_agent")
     workflow.add_edge("final_response", END)
 
     # Memory

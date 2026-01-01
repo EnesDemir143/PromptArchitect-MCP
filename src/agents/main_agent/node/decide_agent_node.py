@@ -3,6 +3,7 @@ import os
 
 from langgraph.prebuilt import ToolNode
 
+from agents.main_agent.node.setup_node import load_tools_from_config
 from core.llm_factory import get_base_llm
 from core.state import AgentState
 from logger import logger
@@ -21,8 +22,12 @@ async def decide_agent_node(state: AgentState) -> dict:
     """
 
     llm = get_base_llm()
-    main_tools = state.get("tools_dict", {}).get("main_agent", {}).values()
-    tools = list(main_tools) if main_tools else []
+    tools = load_tools_from_config("main_agent")
+
+    for t in tools:
+        if t.name == "route_to_task_manager":
+            t.current_state = state.copy()
+            logger.info("Decide Node: Injected state into RouteToTaskManager.")
 
     if tools:
         llm_with_tools = llm.bind_tools(tools)
@@ -44,8 +49,11 @@ async def decide_agent_node(state: AgentState) -> dict:
             )
 
             tool_node = ToolNode(tools=tools)
-            tool_results = await tool_node.ainvoke(state)
 
+            temp_state = state.copy()
+            temp_state["messages"] = list(state["messages"]) + [response]
+
+            tool_results = await tool_node.ainvoke(temp_state)
             updates["messages"] += tool_results["messages"]
 
             if os.path.exists(".ai_state.json"):

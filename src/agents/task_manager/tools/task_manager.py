@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Type
 
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -31,8 +31,7 @@ class ManageTasks(BaseTool):
     name: str = "manage_tasks"
     description: str = "Manages the project tasks. Use this to add, update, or delete tasks in the manifest."
 
-    args_schema = TaskInput
-
+    args_schema: Type[BaseModel] = TaskInput
     filename: str = ".ai_state.json"
 
     def _run(
