@@ -16,16 +16,28 @@ mcp = FastMCP("PromptArchitect")
 @mcp.tool()
 async def architect_request(request: str) -> str:
     """
-    Kullanıcının kodlama isteğini analiz eder, görevlere böler ve .ai_state.json dosyasına yazar.
-    Kodlamaya başlamadan önce MUTLAKA bu aracı çalıştır.
+    Acts as the primary "Project Architect" and "Orchestration Engine" for this coding environment.
+    
+    CRITICAL: This tool MUST be the FIRST step for any coding task, feature request, or refactoring.
+    Do not attempt to write code or modify files until this tool has been executed.
+
+    This tool triggers the internal multi-agent system (LangGraph) to:
+    1. Analyze the user's high-level request against the current project context.
+    2. Decompose the request into specific, actionable tasks using the Task Manager.
+    3. Update the persistent project manifest (.ai_state.json) with new tasks, status, and architectural rules.
+    4. Generate a detailed "Architected Prompt" (implementation plan) for the Developer to follow.
+
     Args:
-        request: Kullanıcının yapmak istediği iş (Örn: "Login sayfası ekle")
+        request (str): The user's raw coding request, feature description, or bug report (e.g., "Add JWT auth", "Refactor the API").
+
+    Returns:
+        str: A summary of the architectural plan and confirmation that the project manifest (.ai_state.json) has been updated.
     """
     try:
         # 1. Main Agent'ı oluştur (Senin agent_flow.py dosyanı kullanır)
         app = await create_main_agent()
         
-        # 2. Architect Prompt'u hazırla (cli.py'deki mantıkla aynı)
+        # 2. Architect Prompt'u hazırla
         architect_prompt = (
             f"Please analyze the following request and generate a detailed, "
             f"architected prompt that an expert developer can use to implement it. "
@@ -33,7 +45,7 @@ async def architect_request(request: str) -> str:
             f"User Request: {request}"
         )
 
-        # 3. State'i hazırla (state.py ve json_store.py kullanır)
+        # 3. State'i hazırla
         initial_state = {
             "messages": [HumanMessage(content=architect_prompt)],
             "manifest": JSONStore().load(), # Mevcut durumu yükle
@@ -42,15 +54,14 @@ async def architect_request(request: str) -> str:
         }
 
         # 4. Graph'ı çalıştır
-        # Not: CLI'da astream kullanmıştın, burada tek seferde sonuç almak için invoke kullanıyoruz.
         final_state = await app.ainvoke(initial_state)
 
         # 5. Sonucu Dön
         last_message = final_state["messages"][-1]
-        return f"✅ PLANLAMA TAMAMLANDI.\n\nArchitect Raporu:\n{last_message.content}\n\n.ai_state.json güncellendi. Görevleri uygulamaya başlayabilirsin."
+        return f"✅ ARCHITECTURE PLAN COMPLETE.\n\nArchitect Report:\n{last_message.content}\n\nSystem Note: The .ai_state.json manifest has been updated with new tasks. You may now proceed with implementation based on these tasks."
 
     except Exception as e:
-        return f"❌ HATA: Architect çalışırken sorun oluştu: {str(e)}"
+        return f"❌ ARCHITECT ERROR: An error occurred during the planning phase: {str(e)}"
 
 if __name__ == "__main__":
     mcp.run()
