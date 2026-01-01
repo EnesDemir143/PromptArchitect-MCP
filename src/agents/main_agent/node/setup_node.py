@@ -106,6 +106,7 @@ async def setup_node(state: AgentState) -> dict:
     # Manifest'i güncelle
     manifest["project_meta"]["root_directory"] = str(Path.cwd())
     manifest["project_meta"]["tech_stack"] = frameworks
+    manifest["project_meta"]["languages"] = languages
     # Architecture veya diğer alanlara da ekleyebiliriz, şimdilik bunları basalım
     
     # Context'i state'e de ekleyelim (Eğer yukarıda yapılmadıysa)

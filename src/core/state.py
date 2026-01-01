@@ -9,6 +9,7 @@ from typing_extensions import Annotated
 class ProjectMeta(TypedDict):
     name: str
     tech_stack: List[str]
+    languages: Dict[str, str]
     architecture: str
     root_directory: Optional[str]
 

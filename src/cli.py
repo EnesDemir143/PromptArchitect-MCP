@@ -10,8 +10,9 @@ from agents.main_agent.agent_flow import create_main_agent
 from memory.json_store import JSONStore
 from langchain_core.messages import HumanMessage
 
-async def run_cli(request: str):
-    print(f"🏗️  Architecting prompt for request: '{request}'...\n")
+async def run_cli(request: str, raw: bool = False):
+    if not raw:
+        print(f"🏗️  Architecting prompt for request: '{request}'...\n")
     
     try:
         app = await create_main_agent()
@@ -40,26 +41,34 @@ async def run_cli(request: str):
                     msg = state_update["messages"][-1]
                     if msg.content:
                         final_response = msg.content
-                        
-        print("\n" + "="*80)
-        print("🏛️  ARCHITECTED PROMPT")
-        print("="*80 + "\n")
-        print(final_response)
-        print("\n" + "="*80 + "\n")
+        
+        if raw:
+            print(final_response)
+        else:
+            print("\n" + "="*80)
+            print("🏛️  ARCHITECTED PROMPT")
+            print("="*80 + "\n")
+            print(final_response)
+            print("\n" + "="*80 + "\n")
 
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        if args.raw:
+             print(f"Error: {str(e)}")
+        else:
+             print(f"❌ Error: {str(e)}")
 
 def main():
     parser = argparse.ArgumentParser(description="Prompt Architect CLI")
     parser.add_argument("request", nargs="?", help="The coding request to architect")
+    parser.add_argument("--raw", action="store_true", help="Output only the architected prompt")
     args = parser.parse_args()
     
     if not args.request:
-        print("Usage: python src/cli.py \"Your request here\"")
+        if not args.raw:
+            print("Usage: python src/cli.py \"Your request here\"")
         return
 
-    asyncio.run(run_cli(args.request))
+    asyncio.run(run_cli(args.request, raw=args.raw))
 
 if __name__ == "__main__":
     main()
