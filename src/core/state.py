@@ -57,5 +57,9 @@ class AgentState(TypedDict):
     current_agent: str
     next_node: str
 
+    # Sistem ve Proje Bağlamı (Otomatik)
+    system_info: dict  # OS, Shell, etc.
+    file_structure: str  # Tree view
+
     # Hata yönetimi
     error: Optional[str]

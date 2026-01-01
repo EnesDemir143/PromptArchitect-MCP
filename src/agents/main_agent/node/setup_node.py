@@ -6,6 +6,7 @@ import yaml
 from langchain_core.messages import SystemMessage
 
 from core.state import AgentState
+from core.context_scanner import ContextScanner
 from logger import logger
 
 
@@ -60,8 +61,35 @@ async def setup_node(state: AgentState) -> dict:
         content = sys_cfg.get("content")
 
         if isinstance(content, str) and content.strip():
-            updates["messages"] = [SystemMessage(content=content)]
-            logger.info("System prompt loaded.")
+            # SCANNER: Otomatik sistem ve proje taraması
+            scanner = ContextScanner()
+            sys_info = scanner.get_os_info()
+            files = scanner.scan_directory()
+            frameworks = scanner.detect_frameworks()
+            languages = scanner.get_language_stats()
+            
+            # Context'i kaydet
+            updates["system_info"] = sys_info
+            updates["file_structure"] = files
+            
+            # Format language stats
+            lang_str = ", ".join([f"{k} {v}" for k, v in languages.items()])
+            
+            # System Prompt'a enjekte et
+            context_injection = (
+                f"\n\n[AUTOMATIC CONTEXT INJECTION]\n"
+                f"OS: {sys_info['os']} {sys_info['release']} ({sys_info['architecture']})\n"
+                f"Shell: {sys_info['shell']}\n"
+                f"Frameworks Detected: {', '.join(frameworks)}\n"
+                f"Languages: {lang_str}\n"
+                f"File Structure:\n{files}\n"
+                f"[END CONTEXT]\n"
+            )
+            
+            final_system_prompt = content + context_injection
+            updates["messages"] = [SystemMessage(content=final_system_prompt)]
+            
+            logger.info("System prompt loaded with automatic context injection.")
 
     # 2. Manifest Yükle
     if manifest_path.exists():
