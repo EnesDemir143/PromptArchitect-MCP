@@ -1,18 +1,11 @@
 ---
-description: Generates an architected prompt and then optionally executes it.
+description: Generates an architected prompt using the internal agent.
 ---
-1. Ask the user for their request if it wasn't provided in the initial prompt.
 
-2. Run the Architect to generate a plan:
-   ```bash
-   python src/cli.py "<USER_REQUEST>" --raw
-   ```
+# Project Rules (Architecture First)
 
-3. Display the generated "Architected Prompt" to the user clearly.
-
-4. Ask the user:
-   > "Do you want me to proceed with this plan?"
-
-5. If the user says **YES**:
-   - Treat the "Architected Prompt" as your new set of instructions.
-   - Begin executing the tasks defined in that prompt immediately using your coding tools.
+1.  **Intercept Request:** When the user makes a coding request, do NOT start coding immediately.
+2.  **Consult Architect:** Use the `architect_request` MCP tool.
+    * Input: The user's full request.
+3.  **Review Plan:** The tool will update `.ai_state.json`. Read this plan.
+4.  **Execute:** Implement the tasks defined in the plan.

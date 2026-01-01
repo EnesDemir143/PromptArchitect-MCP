@@ -1,0 +1,16 @@
+{
+    "mcpServers": {
+        "PromptArchitect": {
+            "command": "/home/jieuna1/miniconda3/envs/prompt-mcp/bin/python",
+            "args": [
+                "/home/jieuna1/Documents/PromptArchitect-MCP/src/server.py"
+            ],
+            "env": {
+                "LLM_PROVIDER": "openai",
+                "OPENAI_API_KEY": "",
+                "ANTHROPIC_API_KEY": "",
+                "GOOGLE_API_KEY": ""
+            }
+        }
+    }
+}
