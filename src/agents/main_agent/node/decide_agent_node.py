@@ -1,5 +1,8 @@
+from google.genai.types import CachedContentOrDict
 
+from core.llm_factory import get_base_llm
 from core.state import AgentState
+from logger import logger
 
 
 async def decide_agent_node(state: AgentState) -> dict:
@@ -14,6 +17,43 @@ async def decide_agent_node(state: AgentState) -> dict:
         state (AgentState): The current state of the orchestration graph.
     """
 
+    llm = get_base_llm()
+    main_tools = state.get("tools_dict", {}).get("main_agent", {}).values()
+    tools = list(main_tools) if main_tools else []
+
+    if tools:
+        llm_with_tools = llm.bind_tools(tools)
+        logger.info(f"Decide Agent Node: Binding {len(tools)} tools to the LLM.")
+    else:
+        llm_with_tools = llm
+        logger.info("Decide Agent Node: No tools to bind to the LLM.")
+
     updates: dict = {}
+
+    try:
+        response = await llm_with_tools.ainvoke(state["messages"])
+        updates["messages"] = [response]
+        if hasattr(response, "tool_calls") and response.tool_calls:
+            logger.info(
+                f"Decide Agent Node: Prepared {len(response.tool_calls)} tool call(s)."
+            )
+            next_node = "tool_execution_node"
+        else:
+            logger.info(
+                "Decide Agent Node: No tool call needed, proceeding to final response."
+            )
+            next_node = "final_response_node"
+        updates["history"] = [
+            f"Decide Agent Node: Processed message with {len(getattr(response, 'tool_calls', []))} tool call(s)."
+        ]
+        updates["error"] = None
+        updates["next_node"] = next_node
+
+    except Exception as e:
+        error_msg = f"Decide Agent Node Error: {str(e)}"
+        logger.error(error_msg)
+        updates["error"] = error_msg
+        updates["history"] = [f"FAILED: {error_msg}"]
+        # next_node = "error_handling_node"
 
     return updates
