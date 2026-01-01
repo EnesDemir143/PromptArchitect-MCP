@@ -1,4 +1,5 @@
 from google.genai.types import CachedContentOrDict
+from langgraph.prebuilt import ToolNode
 
 from core.llm_factory import get_base_llm
 from core.state import AgentState
@@ -32,12 +33,20 @@ async def decide_agent_node(state: AgentState) -> dict:
 
     try:
         response = await llm_with_tools.ainvoke(state["messages"])
+
         updates["messages"] = [response]
+
         if hasattr(response, "tool_calls") and response.tool_calls:
             logger.info(
                 f"Decide Agent Node: Prepared {len(response.tool_calls)} tool call(s)."
             )
-            next_node = "tool_execution_node"
+
+            tool_node = ToolNode(tools=tools)
+            tool_results = await tool_node.ainvoke(state)
+
+            updates["messages"] += tool_results["messages"]
+
+            next_node = "decide_agent"
         else:
             logger.info(
                 "Decide Agent Node: No tool call needed, proceeding to final response."
