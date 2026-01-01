@@ -1,97 +1,51 @@
-import importlib
-from pathlib import Path
-
-import yaml
 from langchain_core.messages import AIMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
 from agents.task_manager.node.analysis_agent import analysis_agent
-from agents.task_manager.node.setup_node import setup_node
 from core.state import AgentState
 from logger import logger
 
 
 def should_continue(state: AgentState) -> str:
-    """
-    Routing logic: Decides whether to continue to the 'tools' node
-    or finish the execution by going to 'end'.
-    """
     last_message = state["messages"][-1]
-    if isinstance(last_message, AIMessage) and last_message.tool_calls:
+    if isinstance(last_message, AIMessage) and getattr(
+        last_message, "tool_calls", None
+    ):
         return "tools"
-
     return "end"
 
 
-async def create_main_agent():
-    config_path = Path(__file__).parent.parent / "config.yaml"
-    if not config_path.exists():
-        logger.error(f"Configuration file not found at {config_path}")
-        return None
+async def create_task_manager_agent(initial_state: AgentState):
+    """
+    Task Manager sub-agent flow.
+    Burada initial_state, Main Agent setup node tarafından zaten
+    config + manifest + tools_dict ile doldurulmuş olmalı.
+    """
 
-    with open(config_path, "r", encoding="utf-8") as file:
-        config = yaml.safe_load(file)
-
-    tm_config = config.get("task_manager", {})
-    actual_tool_instances = []
-    tools_metadata = tm_config.get("tools", [])
-
-    for t in tools_metadata:
-        try:
-            module_str = t["import_path"].replace(".py", "").replace("/", ".")
-
-            # Eğer bu dosya src/ altında ise:
-            module_path = (
-                f"agents.{module_str}"
-                if not module_str.startswith("agents")
-                else module_str
-            )
-
-            # Dinamik import
-            module = importlib.import_module(module_path)
-            tool_class = getattr(module, t["class_name"])
-
-            # Instance oluşturma
-            tool_instance = tool_class(**t.get("params", {}))
-            actual_tool_instances.append(tool_instance)
-
-            logger.info(f"Successfully loaded: {t['class_name']} from {module_path}")
-        except Exception as e:
-            logger.error(f"Error loading {t.get('class_name')}: {str(e)}")
-
-    tools_dict = {t.name: t for t in actual_tool_instances}
-
-    async def setup_node_with_tools(state: AgentState):
-        """
-        Wrapper around setup_node to inject tools into the state.
-        """
-        result = await setup_node(state)  # Orijinal setup_node'u çalıştır
-        result["tools_dict"] = tools_dict  # Tool'ları state'e ekle
-        return result
-
-    # 3. Graf Yapılandırması
     workflow = StateGraph(AgentState)
+    logger.info("Creating Task Manager agent workflow...")
 
-    # Düğümleri Ekle
-    workflow.add_node("setup", setup_node_with_tools)
+    # Task Manager analiz düğümü
     workflow.add_node("analysis", analysis_agent)
-    # Hazır ToolNode, listeyi otomatik olarak fonksiyon isimleriyle eşleştirir
-    workflow.add_node("tools", ToolNode(tools=actual_tool_instances))
 
-    # 4. Akış Tanımı
-    workflow.add_edge(START, "setup")
-    workflow.add_edge("setup", "analysis")
+    # Sadece Task Manager tool set'ini kullan
+    tm_tools = initial_state["tools_dict"]["task_manager"].values()
+    workflow.add_node("tools", ToolNode(tools=list(tm_tools)))
+    logger.info("Added Task Manager tools to the workflow.")
 
+    # Akış
+    workflow.add_edge(START, "analysis")
     workflow.add_conditional_edges(
-        "analysis", should_continue, {"tools": "tools", "end": END}
+        "analysis",
+        should_continue,
+        {"tools": "tools", "end": END},
     )
-
-    # ReAct döngüsü: Tool çıktısını tekrar analize gönder
     workflow.add_edge("tools", "analysis")
+    logger.info("Defined workflow edges and conditions.")
 
-    # 5. Kalıcı Hafıza (Checkpointing)
     memory = MemorySaver()
+    logger.info("Compiled Task Manager agent workflow with memory checkpointer.")
 
     return workflow.compile(checkpointer=memory)
