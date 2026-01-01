@@ -7,6 +7,7 @@ from langchain_core.messages import SystemMessage
 
 from core.state import AgentState
 from core.context_scanner import ContextScanner
+from memory.json_store import JSONStore
 from logger import logger
 
 
@@ -91,14 +92,31 @@ async def setup_node(state: AgentState) -> dict:
             
             logger.info("System prompt loaded with automatic context injection.")
 
-    # 2. Manifest Yükle
-    if manifest_path.exists():
-        try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
-                updates["manifest"] = json.load(f)
-            logger.info("Manifest loaded.")
-        except Exception as e:
-            logger.error(f"Error loading manifest: {e}")
+    # 2. Manifest Yükle ve Güncelle
+    json_store = JSONStore(str(manifest_path))
+    manifest = json_store.load()
+    
+    # SCANNER (Burada da çağırıp manifest'i güncelliyoruz)
+    scanner = ContextScanner()
+    files = scanner.scan_directory()
+    sys_info = scanner.get_os_info()
+    frameworks = scanner.detect_frameworks()
+    languages = scanner.get_language_stats()
+    
+    # Manifest'i güncelle
+    manifest["project_meta"]["root_directory"] = str(Path.cwd())
+    manifest["project_meta"]["tech_stack"] = frameworks
+    # Architecture veya diğer alanlara da ekleyebiliriz, şimdilik bunları basalım
+    
+    # Context'i state'e de ekleyelim (Eğer yukarıda yapılmadıysa)
+    if "system_info" not in updates:
+         updates["system_info"] = sys_info
+         updates["file_structure"] = files
+    
+    # Değişiklikleri diske yaz
+    json_store.save(manifest)
+    updates["manifest"] = manifest
+    logger.info("Manifest loaded and updated with scanned context.")
 
     # Not: tools_dict ARTIK YÜKLENMİYOR.
 
