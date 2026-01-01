@@ -1,8 +1,7 @@
 import os
 from typing import Any, Dict
 
-from langchain_google_genai import ChatGoogleGenerativeAI
-
+from core.llm_factory import get_base_llm
 from core.state import AgentState
 from logger import logger
 
@@ -24,12 +23,12 @@ async def analysis_agent(state: AgentState) -> Dict[str, Any]:
     """
     logger.info("Analysis Agent: Starting state analysis...")
 
-    tools = list(state.get("tools_dict", {}).values())
+    all_tools_map = state.get("tools_dict", {})
+    task_tools_map = all_tools_map.get("task_manager", {})
+    tools = list(task_tools_map.values())
 
     # temperature=0 is essential for consistent tool parameter generation
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-3-pro", temperature=0, google_api_key=os.getenv("GOOGLE_API_KEY")
-    )
+    llm = get_base_llm()
 
     # Bind tools natively to the model
     llm_with_tools = llm.bind_tools(tools) if tools else llm
