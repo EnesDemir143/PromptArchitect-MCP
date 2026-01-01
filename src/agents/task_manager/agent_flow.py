@@ -19,7 +19,7 @@ def should_continue(state: AgentState) -> str:
     return "end"
 
 
-async def create_task_manager_agent(initial_state: AgentState):
+async def create_task_manager_agent(tools_list):
     """
     Task Manager sub-agent flow.
     Burada initial_state, Main Agent setup node tarafından zaten
@@ -41,8 +41,7 @@ async def create_task_manager_agent(initial_state: AgentState):
     workflow.add_node("analysis", analysis_agent)
 
     # Sadece Task Manager tool set'ini kullan
-    tm_tools = initial_state["tools_dict"]["task_manager"].values()
-    workflow.add_node("tools", ToolNode(tools=list(tm_tools)))
+    workflow.add_node("tools", ToolNode(tools=tools_list))
     logger.info("Added Task Manager tools to the workflow.")
 
     # Akış

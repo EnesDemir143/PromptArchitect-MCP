@@ -23,7 +23,9 @@ async def analysis_agent(state: AgentState) -> Dict[str, Any]:
     """
     logger.info("Analysis Agent: Starting state analysis...")
 
-    tools = list(state.get("tools_dict", {}).values())
+    all_tools_map = state.get("tools_dict", {})
+    task_tools_map = all_tools_map.get("task_manager", {})
+    tools = list(task_tools_map.values())
 
     # temperature=0 is essential for consistent tool parameter generation
     llm = get_base_llm()

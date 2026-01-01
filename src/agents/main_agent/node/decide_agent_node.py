@@ -1,4 +1,6 @@
-from google.genai.types import CachedContentOrDict
+import json
+import os
+
 from langgraph.prebuilt import ToolNode
 
 from core.llm_factory import get_base_llm
@@ -45,6 +47,18 @@ async def decide_agent_node(state: AgentState) -> dict:
             tool_results = await tool_node.ainvoke(state)
 
             updates["messages"] += tool_results["messages"]
+
+            if os.path.exists(".ai_state.json"):
+                try:
+                    with open(".ai_state.json", "r", encoding="utf-8") as f:
+                        # updates sözlüğüne manifest'i ekliyoruz.
+                        # LangGraph bunu ana state ile birleştirecek.
+                        updates["manifest"] = json.load(f)
+                    logger.info(
+                        "Decide Node: Manifest reloaded from disk after tool execution."
+                    )
+                except Exception as read_err:
+                    logger.error(f"Failed to reload manifest: {read_err}")
 
             next_node = "decide_agent"
         else:
