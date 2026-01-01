@@ -7,6 +7,8 @@ from agents.task_manager.node.analysis_agent import analysis_agent
 from core.state import AgentState
 from logger import logger
 
+task_agent = None
+
 
 def should_continue(state: AgentState) -> str:
     last_message = state["messages"][-1]
@@ -23,6 +25,14 @@ async def create_task_manager_agent(initial_state: AgentState):
     Burada initial_state, Main Agent setup node tarafından zaten
     config + manifest + tools_dict ile doldurulmuş olmalı.
     """
+
+    global task_agent
+
+    if task_agent is not None:
+        logger.info(
+            "Task Manager agent workflow already created. Reusing existing instance."
+        )
+        return task_agent
 
     workflow = StateGraph(AgentState)
     logger.info("Creating Task Manager agent workflow...")
@@ -48,4 +58,8 @@ async def create_task_manager_agent(initial_state: AgentState):
     memory = MemorySaver()
     logger.info("Compiled Task Manager agent workflow with memory checkpointer.")
 
-    return workflow.compile(checkpointer=memory)
+    compiled_graph = workflow.compile(checkpointer=memory)
+
+    task_agent = compiled_graph
+
+    return task_agent
