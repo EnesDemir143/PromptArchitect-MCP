@@ -1,6 +1,7 @@
 import json
 from datetime import datetime  # Eklendi
 from typing import Any, Dict, Type
+from pathlib import Path
 
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -16,7 +17,8 @@ class SyncManifest(BaseTool):
     name: str = "sync_manifest"
     description: str = "Saves the current project state to a JSON file. Use this for full state persistence."
     args_schema: Type[BaseModel] = SyncManifestInput
-    filename: str = ".ai_state.json"
+    root_dir: Path = Path(__file__).resolve().parents[4]
+    filename: str = str((root_dir / ".ai_state.json").resolve())
 
     def _run(self, manifest_data: Dict[str, Any]) -> str:
         try:

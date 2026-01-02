@@ -48,8 +48,9 @@ def load_tools_from_config(agent_name: str) -> list:
 
 async def setup_node(state: AgentState) -> dict:
     """Sadece system prompt ve manifest yükler."""
-    config_path = Path(__file__).parent.parent.parent / "config.yaml"
-    manifest_path = Path(".ai_state.json")
+    root_dir: Path = Path(__file__).resolve().parents[4]
+    config_path = (root_dir / "src" / "agents" / "config.yaml").resolve()
+    manifest_path = (root_dir / ".ai_state.json").resolve()
     updates: dict = {}
 
     # 1. System Prompt Yükle
@@ -104,7 +105,7 @@ async def setup_node(state: AgentState) -> dict:
     languages = scanner.get_language_stats()
     
     # Manifest'i güncelle
-    manifest["project_meta"]["root_directory"] = str(Path.cwd())
+    manifest["project_meta"]["root_directory"] = str(root_dir)
     manifest["project_meta"]["tech_stack"] = frameworks
     manifest["project_meta"]["languages"] = languages
     # Architecture veya diğer alanlara da ekleyebiliriz, şimdilik bunları basalım

@@ -11,8 +11,12 @@ class ContextScanner:
     to the AI agent.
     """
 
-    def __init__(self, root_dir: str = "."):
-        self.root_dir = Path(root_dir).resolve()
+    def __init__(self, root_dir: Optional[str] = None):
+        if root_dir:
+            self.root_dir = Path(root_dir).resolve()
+        else:
+            # src/core/context_scanner.py -> parents[2] is project root
+            self.root_dir = Path(__file__).resolve().parents[2]
         self.ignore_dirs = {
             ".git",
             "__pycache__",

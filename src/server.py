@@ -4,12 +4,15 @@ import sys
 from mcp.server.fastmcp import FastMCP
 from langchain_core.messages import HumanMessage
 
+from pathlib import Path
+import sys
+import os
+
 # Proje kök dizinini path'e ekle (Modüllerin bulunması için)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agents.main_agent.agent_flow import create_main_agent
 from memory.json_store import JSONStore
-from pathlib import Path # <--- Bunu ekle
 
 # MCP Sunucusunu Başlat
 mcp = FastMCP("PromptArchitect")
@@ -36,7 +39,7 @@ async def architect_request(request: str) -> str:
     """
     try:
 
-        root_dir = Path(__file__).parent.parent
+        root_dir = Path(__file__).resolve().parent.parent
         manifest_path = root_dir / ".ai_state.json"
 
         store = JSONStore(filename=str(manifest_path))

@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Type
 
 from langchain.tools import BaseTool
@@ -32,8 +33,8 @@ class ManageTasks(BaseTool):
     description: str = "Manages the project tasks. Use this to add, update, or delete tasks in the manifest."
 
     args_schema: Type[BaseModel] = TaskInput
-    filename: str = ".ai_state.json"
-
+    root_dir: Path = Path(__file__).resolve().parents[4]
+    filename: str = str((root_dir / ".ai_state.json").resolve())
     def _run(
         self,
         action: str,

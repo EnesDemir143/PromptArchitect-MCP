@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 from typing import List, Optional, Type
+from pathlib import Path
 
 from langchain.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -27,8 +28,8 @@ class MimariMetaUpdater(BaseTool):
         "Updates project metadata, status, and global rules in the manifest file."
     )
     args_schema: Type[BaseModel] = ManifestUpdateInput
-    filename: str = ".ai_state.json"
-
+    root_dir: Path = Path(__file__).resolve().parents[4]
+    filename: str = str((root_dir / ".ai_state.json").resolve())
     def _run(
         self,
         name: Optional[str] = None,

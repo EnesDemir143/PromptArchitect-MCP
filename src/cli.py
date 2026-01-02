@@ -1,14 +1,19 @@
+from pathlib import Path
 import argparse
 import asyncio
 import os
 import sys
 
 # Ensure src is in path
-sys.path.insert(0, os.path.join(os.getcwd(), "src"))
+root_dir = Path(__file__).resolve().parent
+sys.path.insert(0, str(root_dir))
 
 from agents.main_agent.agent_flow import create_main_agent
 from memory.json_store import JSONStore
 from langchain_core.messages import HumanMessage
+
+def get_manifest_path():
+    return str(Path(__file__).resolve().parent.parent / ".ai_state.json")
 
 async def run_cli(request: str, raw: bool = False):
     if not raw:
@@ -26,7 +31,7 @@ async def run_cli(request: str, raw: bool = False):
         
         initial_state = {
             "messages": [HumanMessage(content=architect_request)],
-            "manifest": JSONStore().load(),
+            "manifest": JSONStore(get_manifest_path()).load(),
             "history": [],
             "current_agent": "start",
         }

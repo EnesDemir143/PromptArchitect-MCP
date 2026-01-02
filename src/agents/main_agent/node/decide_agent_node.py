@@ -20,71 +20,68 @@ async def decide_agent_node(state: AgentState) -> dict:
     Args:
         state (AgentState): The current state of the orchestration graph.
     """
-
+# 1. Hazırlık
     llm = get_base_llm()
     tools = load_tools_from_config("main_agent")
 
+    # State injection (Task Manager için)
     for t in tools:
         if t.name == "route_to_task_manager":
             t.current_state = state.copy()
             logger.info("Decide Node: Injected state into RouteToTaskManager.")
 
+    # LLM'e araçları tanıt
     if tools:
         llm_with_tools = llm.bind_tools(tools)
-        logger.info(f"Decide Agent Node: Binding {len(tools)} tools to the LLM.")
     else:
         llm_with_tools = llm
-        logger.info("Decide Agent Node: No tools to bind to the LLM.")
 
     updates: dict = {}
 
     try:
+        # 2. Karar Anı (LLM Düşünüyor)
         response = await llm_with_tools.ainvoke(state["messages"])
-
         updates["messages"] = [response]
 
+        # 3. Eğer Ajan "Araç Kullanacağım" dediyse
         if hasattr(response, "tool_calls") and response.tool_calls:
-            logger.info(
-                f"Decide Agent Node: Prepared {len(response.tool_calls)} tool call(s)."
-            )
+            logger.info(f"Decide Agent Node: Calling {len(response.tool_calls)} tools.")
 
+            # Araçları çalıştır
             tool_node = ToolNode(tools=tools)
-
             temp_state = state.copy()
             temp_state["messages"] = list(state["messages"]) + [response]
-
+            
             tool_results = await tool_node.ainvoke(temp_state)
             updates["messages"] += tool_results["messages"]
 
-            if os.path.exists(".ai_state.json"):
+            # Manifesti güncelle (Disk -> Memory senkronizasyonu)
+            manifest_path = Path(__file__).resolve().parents[4] / ".ai_state.json"
+            if manifest_path.exists():
                 try:
-                    with open(".ai_state.json", "r", encoding="utf-8") as f:
-                        # updates sözlüğüne manifest'i ekliyoruz.
-                        # LangGraph bunu ana state ile birleştirecek.
+                    with open(manifest_path, "r", encoding="utf-8") as f:
                         updates["manifest"] = json.load(f)
-                    logger.info(
-                        "Decide Node: Manifest reloaded from disk after tool execution."
-                    )
                 except Exception as read_err:
-                    logger.error(f"Failed to reload manifest: {read_err}")
+                    logger.error(f"Manifest reload error: {read_err}")
 
+            # KRİTİK NOKTA: Araç kullandıysa tekrar kendine dönmeli mi?
+            # Sonsuz döngü sebebi burasıydı. Ama artık ContextScanner düzeldiği için
+            # ajan "Tamam işim bitti" diyebilecek.
             next_node = "decide_agent"
+
         else:
-            logger.info(
-                "Decide Agent Node: No tool call needed, proceeding to final response."
-            )
+            # 4. Ajan "Araç kullanmama gerek yok, bitti" dediyse
+            logger.info("Decide Agent: Task completed, generating final response.")
             next_node = "final_response_node"
-        updates["history"] = [
-            f"Decide Agent Node: Processed message with {len(getattr(response, 'tool_calls', []))} tool call(s)."
-        ]
+
+        updates["history"] = [f"Decide Node: Step executed."]
         updates["error"] = None
         updates["next_node"] = next_node
 
     except Exception as e:
-        error_msg = f"Decide Agent Node Error: {str(e)}"
+        error_msg = f"Decide Node Error: {str(e)}"
         logger.error(error_msg)
         updates["error"] = error_msg
-        updates["history"] = [f"FAILED: {error_msg}"]
-        # next_node = "error_handling_node"
+        updates["next_node"] = "final_response_node"
 
     return updates
