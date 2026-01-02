@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from agents.main_agent.agent_flow import create_main_agent
 from memory.json_store import JSONStore
+from pathlib import Path # <--- Bunu ekle
 
 # MCP Sunucusunu Başlat
 mcp = FastMCP("PromptArchitect")
@@ -34,6 +35,13 @@ async def architect_request(request: str) -> str:
         str: A summary of the architectural plan and confirmation that the project manifest (.ai_state.json) has been updated.
     """
     try:
+
+        root_dir = Path(__file__).parent.parent
+        manifest_path = root_dir / ".ai_state.json"
+
+        store = JSONStore(filename=str(manifest_path))
+
+
         # 1. Main Agent'ı oluştur (Senin agent_flow.py dosyanı kullanır)
         app = await create_main_agent()
         
@@ -48,13 +56,14 @@ async def architect_request(request: str) -> str:
         # 3. State'i hazırla
         initial_state = {
             "messages": [HumanMessage(content=architect_prompt)],
-            "manifest": JSONStore().load(), # Mevcut durumu yükle
+            "manifest": store.load(), # Mevcut durumu yükle
             "history": [],
             "current_agent": "start",
         }
+        config = {"configurable": {"thread_id": "mcp_architect_session"}, "recursion_limit": 100}
 
         # 4. Graph'ı çalıştır
-        final_state = await app.ainvoke(initial_state)
+        final_state = await app.ainvoke(initial_state, config=config)
 
         # 5. Sonucu Dön
         last_message = final_state["messages"][-1]

@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 # Create console handler with formatting
-handler = logging.StreamHandler(sys.stdout)
+handler = logging.StreamHandler(sys.stderr)
 handler.setLevel(logging.INFO)
 
 # Create formatter

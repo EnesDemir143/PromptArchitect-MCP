@@ -32,7 +32,6 @@ class ContextScanner:
             "package-lock.json",
             "yarn.lock",
             "pnpm-lock.yaml",
-            ".ai_state.json",  # Self reference
             "test_execution.log", # Log files
         }
 
