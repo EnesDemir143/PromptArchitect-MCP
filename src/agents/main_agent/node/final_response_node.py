@@ -41,7 +41,7 @@ async def final_response_node(state: AgentState) -> dict:
         updates = {
             "messages": [
                 AIMessage(
-                    content="An error occurred while generating the final response."
+                    content=f"An error occurred while generating the final response. ERROR DETAILS: {str(e)}"
                 )
             ],
             "history": [f"Final response error: {str(e)}"],
